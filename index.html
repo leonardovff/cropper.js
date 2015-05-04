@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Camera</title>
+	<meta charset='utf-8'>
+	<!-- <link rel="stylesheet" type="text/css" href="assets/css/style.css"> -->
+	<link rel="stylesheet" type="text/css" href="assets/css/style.min.css">
+</head>
+<body>
+	<section id="modalContainer">
+		<div id="modal">
+			<div class="photo"><!-- image-editor-->
+				<ul>
+					<li><button class='photo-take-discard'>
+						<div><img src="assets/img/take.png" alt='Take picture'></div>
+						<span></span>
+					</button></li>
+					<li><button disabled class='photo-save'>
+						<img src="assets/img/save.png" alt='Save picture'>
+						<span></span>
+					</button></li>
+				</ul>
+				<div class="photo-edit"></div> <!-- .cropit-image-preview -->
+				<div class='photo-fundo'></div>
+				<canvas id='canvas'></canvas>
+			 	<video id="video">Video stream not available.</video>
+			 	<div class='photo-zoom'>
+			 		<input disabled type="range" class="photo-zoom-input">
+			 	</div>
+			</div>
+		</div>
+	</section>
+	<button id='openModal'>Abrir Camera</button>
+	<script src="assets/js/jquery-1.7.1.min.js" type="text/javascript"></script>
+	<!-- <script src="assets/js/jquery-cropit.js" type="text/javascript"></script> -->
+	<!-- <script src="assets/js/image-editor.js" type="text/javascript"></script> -->
+	<script src="assets/js/jquery-cropit.min.js" type="text/javascript"></script>
+	<script src="assets/js/application.min.js" type="text/javascript"></script>
+	<!-- <script src="assets/js/application.js" type="text/javascript"></script> -->
+</body>
+</html>
