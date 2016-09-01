@@ -41,6 +41,22 @@ var webCam = (function(elCam, elModal,options){
 		    app.acessCam();
 		    btnActions.init();
 		},
+		initFromFile: function(base64){
+			if(options.height) height = options.height
+			photoEdit = get.item('.photo-edit',elCam);
+			video = get.item('#video',elCam);
+		    canvas = get.item('#canvas',elCam);
+		    zoomInput = get.item('.photo-zoom-input',elCam);
+		    btnCapture = get.item('.photo-take-discard',elCam);
+			btnSend = get.item('.photo-save', elCam);
+			elCam.dataset.status = "waint";
+		    btnActions.init(base64);
+        	modal.open();
+		    btnActions.take(btnCapture,base64);
+	      	setTimeout(function(){
+				elModal.className = "open";
+			},200);
+		},
 		acessCam: function(){
 		    navigator.getMedia = ( 	navigator.getUserMedia ||
 		                           	navigator.webkitGetUserMedia ||
@@ -62,9 +78,10 @@ var webCam = (function(elCam, elModal,options){
 		        	modal.open();
 		      	},
 		      	function(err) {
-		      		alert("Permissão à camera negada");
+		      		var temp = err.name=='PermissionDeniedError'?"Permissão à camera negada!":"Camera não encontrada!"
 		        	console.log("An error occured! :");
 		        	console.log(err);
+		        	alert(temp);
 		        	modal.close();
 		        	app.destroy();
 		     	}
@@ -89,7 +106,13 @@ var webCam = (function(elCam, elModal,options){
       			ev.preventDefault();
       		}
 		},
-		takePicture: function(callback){
+		takePicture: function(callback, base64){
+			if(base64){
+				$('.photo').cropit('imageSrc',base64);
+		      	if(typeof(callback)==='function')
+					callback.call();
+				return true;
+			}
 			var context = canvas.getContext('2d');
 		    if (width && height) {
 		      	canvas.width = width*2;
@@ -115,12 +138,34 @@ var webCam = (function(elCam, elModal,options){
 
 	},
 	btnActions = {
-		init: function(){
+		init: function(base64){
+			if(base64){
+				btnCapture.className = "photo-take-discard";
+			   	btnCapture.addEventListener('click', btnActions.exit);
+			   	btnCapture.dataset.action = 'take';
+			    btnCaptureFlag = true;
+			    btnSend.addEventListener('click', btnActions.confirmPhoto);
+			    return true;
+			}
 			btnCapture.className = "photo-take-discard";
 		   	btnCapture.addEventListener('click', btnActions.takeDiscard);
 		   	btnCapture.dataset.action = 'take';
 		    btnCaptureFlag = true;
 		    btnSend.addEventListener('click', btnActions.send);
+		},
+		exit: function(){
+			modal.close();
+			get.id("ccfile").value = "";
+		},
+		confirmPhoto: function(){
+			modal.close();
+		 	var imagem = $('.photo').cropit('export', {
+			  type: 'image/jpeg',
+			  quality: .9,
+			  originalSize: true
+			});
+			get.id("ccFoto").value = imagem;
+			get.id("ccPreview").src = imagem;
 		},
 		takeDiscard: function(ev){
 			if(btnCaptureFlag && 
@@ -136,7 +181,7 @@ var webCam = (function(elCam, elModal,options){
 			}
 	     	ev.preventDefault();
 		},
-		take: function(el){
+		take: function(el, base64){
 			el.className = "photo-take-discard to-discard";
 			el.dataset.action = "discard";
 			setTimeout(function(){
@@ -144,9 +189,9 @@ var webCam = (function(elCam, elModal,options){
 					elCam.dataset.status = "captured";
 					zoomInput.removeAttribute('disabled');
 					btnSend.removeAttribute('disabled');
-					// $('.photo').cropit('reenable');
+					$('.photo').cropit('reenable');
 					get.item('div img', btnCapture).src = "assets/img/discard.png";
-				});
+				},base64);
 			},500);
 		},
 		discard: function(el){
@@ -155,7 +200,7 @@ var webCam = (function(elCam, elModal,options){
 			elCam.dataset.status = "waint";
 			zoomInput.setAttribute('disabled', 'on'); 
 			btnSend.setAttribute('disabled', 'on');
-			// $('.photo').cropit('disable');
+			$('.photo').cropit('disable');
 			$('.photo-edit').css('backgroundImage','');
 			$('.photo').css('backgroundImage','');
 			get.item('div img', btnCapture).src = "assets/img/take.png";
@@ -184,13 +229,13 @@ var webCam = (function(elCam, elModal,options){
 	           error:function(){
 	        		btnSend.dataset.status = "sended";
 	        		btnSend.removeAttribute('disabled');
-	           		alert('Erro no envio, olhar console');
+	           		alert('Erro no envio, olhar console!');
 	           }
 	        }).done(function(respond){
 	        	console.log(respond);
 	        	btnSend.dataset.status = "sended";
 	        	btnSend.removeAttribute('disabled');
-	          	alert("enviou, olhar console");
+	          	alert("Enviou, olhar console");
 	          	modal.close();
 	        });
 		}
@@ -239,15 +284,20 @@ var webCam = (function(elCam, elModal,options){
 			modal.backgroundOpen(function(){
 				app.init();
 			});
+		},
+		loadImage: function(dataBase64){
+			modal.backgroundOpen(function(){
+				app.initFromFile(dataBase64);
+			});
 		}
 	};
 });
 function changeZoom(){
-    var cropited = $('.photo-edit')[0].getBoundingClientRect(),
+    var edit = $('.photo-edit')[0].getBoundingClientRect(),
     modal = $('.photo')[0].getBoundingClientRect(),
     position = $('.photo-edit').css('background-position').split(" "),
-    top = parseInt(position[1])+cropited.top-modal.top,
-    left = parseInt(position[0])+cropited.left-modal.left;
+    top = parseInt(position[1])+edit.top-modal.top,
+    left = parseInt(position[0])+edit.left-modal.left;
     $('.photo').css('background-size', $('.photo-edit').css('background-size')); 
     
     $('.photo').css('background-position', left+"px "+top+"px");
@@ -264,6 +314,9 @@ $('.photo').cropit({
   		console.log('erro');
   	}
 });
+  // width: 354px;
+  // height: 472px;
+
 var onResize = (function () {
 	'use strict';
 
@@ -284,12 +337,39 @@ var onResize = (function () {
 }());
 window.onload = function(){
 	var config = { childList: false, attributes: true },
-		target = document.querySelector( '.photo-edit'),
-		observer = new MutationObserver(onResize);
+	target = document.querySelector( '.photo-edit'),
+	observer = new MutationObserver(onResize);
 	observer.observe(target, config);
 
 	var camera = new webCam('.photo','#modalContainer',{
 		height:550
 	});
 	document.getElementById('openModal').addEventListener('click',camera.open, false);
+	document.querySelector('#ccfile').addEventListener('change',function(e){
+	    console.log(e);
+	    e.preventDefault();
+	    var target = e.dataTransfer || e.target,
+	    file = target && target.files && target.files[0],
+	    options = {
+	      canvas: true,
+	      pixelRatio: window.devicePixelRatio,
+	      downsamplingRatio: 0.5
+	    }
+	    if (!file) {
+	      return
+	    }
+	    var reader  = new FileReader();
+	    reader.onloadend = function () {
+	      loadImage.parseMetaData(file, function (data) {
+	        if (data.exif) {
+	          loadImage(reader.result, function (img) {
+	            camera.loadImage(img.toDataURL("image/jpeg"));
+	          }, {orientation: data.exif.get('Orientation')});
+	          return 
+	        }
+	        camera.loadImage(reader.result);
+	      });
+	    }
+	    reader.readAsDataURL(file);
+  	});
 }
